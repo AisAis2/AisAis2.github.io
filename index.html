@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <title>Document</title>
+</head>
+<body>
+
+    <div id="app">
+        <nav class="navbar navbar-expand-lg bg-dark">
+            <div class="containter-fluid">
+                <a class="navbar-brand text-white" href="#">Pathfinder</a>
+                <a class="navbar-brand text-white" href="#" @click='aStar()'>A*</a>
+                <a class="navbar-brand text-white" href="#" @click='Dijkistras()'>Djk</a>
+            </div>
+        </nav>
+        <div class="container-fluid d-flex flex-row" style="height: 40px;">
+            <button @click="chooseNode=!chooseNode" class="btn btn-light">Start Node</button>
+            <button @click="chooseNodeEnd=!chooseNodeEnd" class="mx-1 btn btn-light">End Node</button>
+            <button @click="clearBoard()" class="mx-1 btn btn-light">Clear</button>
+            <button @click="generateMountain()" class="mx-1 btn btn-light">generate elevation</button>
+
+
+            <div class="dropdown">
+                <button class="btn btn-light dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">Generate obstacles</button>
+                <ul class="dropdown-menu" aria-labelledby="#dropdownMenuButton1">
+                    <li>
+                        <input type="range" min="1" max="100" @change="generateWalls()" v-model="sliderVal">
+                    </li>
+
+                </ul>
+            </div>
+
+
+        </div>
+
+
+
+
+
+
+
+
+        <div class="container-fluid">
+            <div v-for = "x in grid.length" class="d-flex flex-fill">
+                <div v-for="i in grid[x-1]?.length"  :title="titleRetur(x-1,i-1)" :style="{'width':'25px', 'height': '25px','background-color':colorWeight(grid[x-1][i-1].weight)}" @click ="chooseNodes(x-1,i-1)" :class = "classColor(x,i)" class="border border-dark" v-if="startNode(x-1,i-1)">
+                        
+                </div>
+                <!-- <div v-for="i in grid[x-1]?.length"  :style="{'width':'25px', 'height': '25px', 'border-style':''}" @click ="chooseNodes(x-1,i-1)"  class="border border-dark" v-else>
+                </div> -->
+
+        </div>
+
+        
+    </div>
+    </div>
+
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        let app = Vue.createApp({
+            data: function(){
+                return {
+                    isVisible: true,
+                    grid:[],
+                    TotalCost: 0,
+                    openSet:[],
+                    closedSet:[],
+                    cell :{neighbors:[],'isVisited':false},
+                    ccl:'bg-primary',
+                    start:'',
+                    end:'',
+                    chooseNode:false,
+                    chooseNodeEnd:false,
+                    sliderVal:30,
+
+                }
+            },
+            computed:{
+
+            },
+            methods: {
+                generateWalls(){
+                    this.clearBoard()
+                    for(let x=0;x<this.grid.length;x++){
+                        for(let y=0;y<this.grid[0].length;y++){
+                            if(Math.random()<this.sliderVal/100){
+                                this.grid[x][y].wall=true 
+                            }
+                        }
+                    }
+                },
+                titleRetur(x,y){
+                    return 'weight:'+String(this.grid[x][y].weight)
+                },
+                colorWeight(w){
+                    if(w<300){
+                        return 'hsl(352, 75%, 100%)'
+                    }
+                    var ww=Math.floor(w/1000*70)
+                    return 'hsl(30,' +String(100-ww)+'%, 50%)'
+                },
+                clearBoard(){
+                    for(let x=0;x<this.grid.length;x++){
+                        for(let y=0;y<this.grid[0].length;y++){
+                                this.grid[x][y].wall=false
+                                this.grid[x][y].isVisited=false
+                                this.grid[x][y].previous=''
+                                this.grid[x][y].current=false
+                                this.grid[x][y].fff=0
+                                this.grid[x][y].g=0
+                                this.grid[x][y].h=0
+                                this.grid[x][y].path=false
+                                this.grid[x][y].weight=1
+                                this.grid[x][y].dist=1000000
+                        }
+                    }
+                    this.openSet=[]
+                    this.closedSet=[]
+                    this.start=''
+                    this.end=''
+                },
+                
+                gridCreate(){
+                    for(let i = 0; i<30 ; i++){
+                        let col = [];
+                        for(let x = 0; x<100; x++){
+                            Math.random()*100
+                            col.push({neighbors:[],'isVisited':false,'fff':0,'g':0,'h':0,'x':x,'y':i,'previous':'','wall':false,'current':false,'path':false,'weight':1,'dist':1000000 });
+                        }
+                        this.grid.push(col);
+                    }
+                    this.grid[0][0].wall = false;
+                    this.grid[29][99].wall = false;
+                    return this.grid
+                },
+                generateMountain(){
+                    for(let x=0;x<this.grid.length;x++){
+                        for(let y=0;y<this.grid[0].length;y++){
+                            var prob=Math.floor(Math.random()*1000) 
+                            if(prob>600){
+                                this.grid[x][y].weight=prob
+                                this.grid[x][y].g=prob
+                            }
+
+                        }
+                    }
+                },
+                classColor(x,i){
+
+                    if(this.grid[x-1][i-1].isVisited){
+                        return 'bg-danger';
+                    }
+                    
+                    if(this.grid[x-1][i-1].path){
+                        return 'bg-warning';
+                    }
+                    if(this.grid[x-1][i-1].wall){
+                        return 'bg-dark';
+                    }
+
+                    if(this.openSet.indexOf(this.grid[x-1][i-1])>-1 || false){
+                        return 'bg-primary';
+                    } 
+                    else if(this.closedSet.indexOf(this.grid[x-1][i-1])>-1){
+                        return 'bg-success';
+                    } 
+                    else {
+                        return '';
+                    }
+
+                    //return !(this.openSet.indexOf(this.grid[x-1][i-1])>-1 || this.closedSet.indexOf(this.grid[x-1][i-1])>-1)?'':(this.closedSet.indexOf(this.grid[x-1][i-1])>-1?'bg-primary':'bg-success');//slowww
+                },
+                gridNeighbors(grid){
+                    for(let i = 0; i<grid.length; i++){
+                        for(let x = 0; x<grid[0].length; x++){
+                            if(i<grid.length-1){
+                                grid[i][x].neighbors.push(grid[i+1][x])
+                            }
+                            if(i>0){
+                                grid[i][x].neighbors.push(grid[i-1][x])
+                            }
+                            if(x<grid[0].length-1){
+                                grid[i][x].neighbors.push(grid[i][x+1])
+                            }
+                            if(x>0){
+                                grid[i][x].neighbors.push(grid[i][x-1])
+                            }
+                            if(x<grid[0].length-1 && i<grid.length-1){
+                                grid[i][x].neighbors.push(grid[i+1][x+1])
+                            }
+                            if(x>0 && i>0){
+                                grid[i][x].neighbors.push(grid[i-1][x-1])
+                            }
+                            if(x>0 && i<grid.length-1){
+                                grid[i][x].neighbors.push(grid[i+1][x-1])
+                            }
+                            if(i>0 && x<grid[0].length-1){
+                                grid[i][x].neighbors.push(grid[i-1][x+1])
+                            }
+                            
+                        }
+                    }
+
+                },
+                removeFromArr(arr,elem){
+                    for(var i = arr.length-1;i>=0;i--){
+                        if(arr[i]==elem){
+                            arr.splice(i,1); 
+                        }
+
+                    }
+                },
+                colorGrid(b){
+                        
+                    b.isVisited=!b.isVisited
+                    for(const ele of b.neighbors){
+                        ele.isVisited=!ele.isVisited;
+                    }
+                },
+
+                tracePath(end){
+                    while(end.previous){
+                        end = end.previous;
+                        end.path=true;
+                    }
+                },
+                chooseNodes(x,y){
+                    if(this.chooseNode){
+                        this.start=this.grid[x][y]
+                        this.start.wall=false
+                        this.start.isVisited=true
+                        this.chooseNode=false
+                        this.chooseNodeEnd=false
+                    }
+                    else if(this.chooseNodeEnd){
+                        this.end=this.grid[x][y]
+                        this.end.wall=false
+                        this.end.isVisited=true
+                        this.chooseNodeEnd=false
+                        this.chooseNode=false
+                    }
+                    
+                    
+                },
+                startNode(x,y){
+                    if(this.start){
+                        if(this.grid[x][y]==this.start){
+                        return false
+                        }
+                    }
+
+                    return true
+                },
+                   async aStar(){
+                    if(!this.start && !this.end){
+                        console.log('Choose start/end nodes')
+                        return false
+                    }
+                    c=0
+                    if(!this.start){
+                        this.start = this.grid[0][0]
+                    }
+                    if(!this.end){
+                         this.end = this.grid[29][29]
+                    }   
+                    this.start.wall = false;
+                    this.end.wall = false;
+                    this.openSet.push(this.start)
+                        while(this.openSet.length > 0){
+                        var best = 0;
+                        for(var i=0; i<this.openSet.length;i++){
+                            try{
+                                if(this.openSet[i].fff<this.openSet[best].fff){
+                                best =i;
+                            }
+                            } catch(error){
+                                console.log(this.openSet[i]);
+                            }
+
+                        }
+
+                    var current= this.openSet[best]
+                    try{current.current = true;} catch(error){console.log(this.openSet.length)}
+                    if(current == this.end){
+                        this.tracePath(current);
+                        console.log('Algo is Done');
+                        return true;
+                    }
+                    this.removeFromArr(this.openSet, current)
+                    this.closedSet.push(current);
+
+                    var neighbors = current.neighbors;
+                    for(var i = 0; i < neighbors.length;i++){
+                        var neighbor = neighbors[i]; 
+
+                        if(!this.closedSet.includes(neighbor) && !neighbor.wall){
+                            var tempG = current.g + neighbor.g;
+                            var newPath = false;
+                            if(this.openSet.includes(neighbor)){
+                                if(tempG< neighbor.g){
+                                    neighbor.g = tempG;
+                                    newPath =true;
+                                }
+                            } else {
+                                neighbor.g = tempG;
+                                newPath =true;
+                                this.openSet.push(neighbor);
+                            }
+                            if(newPath){
+                                neighbor.h = this.heuristic(neighbor,this.end);
+                                neighbor.fff = neighbor.g +neighbor.h;
+                                neighbor.previous = current;
+                            }
+                            c+=1
+                            if(c==17){
+                                await new Promise((resolve)=> setTimeout(resolve,1));
+                                c=0
+                            }
+                        }
+
+                    }
+                    current.current = false;
+
+                }    
+                alert('No Solution')
+            },
+            heuristic(n, end){
+                var dist= Math.sqrt(Math.pow((n.x-end.x),2)+Math.pow((n.y-end.y),2));
+                return dist;
+            },
+            async Dijkistras(){
+                if(!this.start && !this.end){
+                        console.log('Choose start/end nodes')
+                        return false
+                    }
+                let dist=[] 
+                let sVisited=[]
+                 
+                for(let x=0;x<this.grid.length;x++){
+                    for(let y=0;y<this.grid[0].length;y++){
+                        if(!this.grid[x][y].wall){
+                            this.grid[x][y].dist=Infinity
+                            // Q.push(this.grid[x][y])
+                            // dist.push(this.grid[x][y])
+                        }
+
+                    }
+                }
+                
+                this.start.dist=0
+                c=0
+                this.openSet.push(this.start)
+                while(this.openSet.length>=1){
+                    min_node=this.openSet[0]
+
+                    for(let i =0; i<this.openSet.length;i++){
+                        if(this.openSet[i].dist<min_node.dist && !this.closedSet.includes(this.openSet[i])){
+                            min_node=this.openSet[i]
+
+                        }
+                    }
+                    
+                    
+                    for(let n=0; n<min_node.neighbors.length;n++){
+                        var newPath=false
+                        if(min_node.neighbors[n].dist>min_node.dist+min_node.neighbors[n].weight && !min_node.neighbors[n].wall){
+                            min_node.neighbors[n].dist=min_node.dist+min_node.neighbors[n].weight
+                            min_node.neighbors[n].previous=min_node
+                            this.openSet.push(min_node.neighbors[n])
+                            newPath=true
+
+                        }
+                        if(min_node.neighbors[n]==this.end){
+                            this.tracePath(min_node.neighbors[n]);
+                            console.log('Found')
+                            return true
+                        }
+
+                    }
+                    this.openSet = this.openSet.filter((item)=>{
+                        return item!==min_node
+                    })
+                    this.closedSet.push(min_node)
+                    c+=1
+
+                    if(c==30){
+                        await new Promise((resolve)=> setTimeout(resolve,1));
+                        c=0
+                    }
+                }
+                console.log('No Solution')
+            },
+        },
+
+
+            mounted(){
+                
+                this.gridCreate();
+                this.gridNeighbors(this.grid)
+
+            }
+        },
+    )
+        app.component('box',{
+            props:['aa'],
+            template:`
+            <button class="d-flex border bg-primary" style="width:30px; height: 30px;">{{aa}}</button>
+            `
+        })
+        app.mount('#app')
+    </script>
+</body>
+
+<style>
+
+</style>
+
+</html> 
