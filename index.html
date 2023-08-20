@@ -13,17 +13,16 @@
     <div id="app">
         <nav class="navbar navbar-expand-lg bg-dark">
             <div class="containter-fluid">
-                <a class="navbar-brand text-white" href="#">Pathfinder</a>
+                <a class="navbar-brand text-white ms-3" href="#">Pathfinder</a>
                 <a class="navbar-brand text-white" href="#" @click='aStar()'>A*</a>
-                <a class="navbar-brand text-white" href="#" @click='Dijkistras()'>Djk</a>
+                <a class="navbar-brand text-white" href="#" @click='Dijkistras()'>Dijkstra</a>
             </div>
         </nav>
         <div class="container-fluid d-flex flex-row" style="height: 40px;">
             <button @click="chooseNode=!chooseNode" class="btn btn-light">Start Node</button>
             <button @click="chooseNodeEnd=!chooseNodeEnd" class="mx-1 btn btn-light">End Node</button>
             <button @click="clearBoard()" class="mx-1 btn btn-light">Clear</button>
-            <button @click="generateMountain()" class="mx-1 btn btn-light">generate elevation</button>
-
+            <button @click="generateMountain()" class="mx-1 btn btn-light">Generate elevation</button>
 
             <div class="dropdown">
                 <button class="btn btn-light dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">Generate obstacles</button>
@@ -35,6 +34,9 @@
                 </ul>
             </div>
 
+            <div :style="{'width':'25px', 'height': '25px'}" class="bg-danger mt-2"></div><span class="mt-2 ms-2">Start/End Nodes</span>
+            <div :style="{'width':'25px', 'height': '25px'}" class="bg-warning mt-2 ms-3"></div><span class="mt-2 ms-2">Shortest Path</span>
+            <div :style="{'width':'25px', 'height': '25px'}" class="bg-success mt-2 ms-3"></div><span class="mt-2 ms-2">Visited</span>
 
         </div>
 
@@ -337,7 +339,7 @@
                 return dist;
             },
             async Dijkistras(){
-                if(!this.start && !this.end){
+                if(!this.start || !this.end){
                         console.log('Choose start/end nodes')
                         return false
                     }
