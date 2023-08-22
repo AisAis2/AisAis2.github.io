@@ -37,7 +37,30 @@
             <div :style="{'width':'25px', 'height': '25px'}" class="bg-danger mt-2"></div><span class="mt-2 ms-2">Start/End Nodes</span>
             <div :style="{'width':'25px', 'height': '25px'}" class="bg-warning mt-2 ms-3"></div><span class="mt-2 ms-2">Shortest Path</span>
             <div :style="{'width':'25px', 'height': '25px'}" class="bg-success mt-2 ms-3"></div><span class="mt-2 ms-2">Visited</span>
-
+            <button type="button" class="btn btn-light ms-3" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                Instructions
+            </button>
+            
+            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Instructions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                    1) Choose start by pressing start node button and then pressing on one of the squares on the board. Then choose end node same way. <br>
+                    2) Then you can generate obstacles or elevations by pressing on respective buttons. Higher the elevation darker the square and algorithms will try to avoid them.<br>
+                    3) After choosing start/end nodes you can press on A* or Dijkistra buttons to choose to run whatever algorithm you want.<br>
+                    4) You can clear the board by using clear button<br>
+                    </div>
+                    <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
+                </div>
+            </div>
 
 
 
