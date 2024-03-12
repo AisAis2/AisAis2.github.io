@@ -18,7 +18,7 @@
         <div v-for="(row,x) in board_render" class="d-flex justify-content-center">
             <div v-for="(column,y) in row">
                 <div class="flex-fill" :style="{'height':'60px','width':'60px'}"  >
-                    <input :style="{'width':'60px','height':'60px','outline':'none','box-shadow':'none','border-color': borderEnd(x,y),'border-width':'thin'}" class="ps-4 h6" :id="x*10+y" v-model="board_render[x][y].value" :disabled="board_render[x][y].d" :title="coord(x,y)" @change="checkInput(x,y),checkSoln()" :class="{ 'text-dark':board_render[x][y].d,'text-primary':!board_render[x][y].d}" >
+                    <input :style="{'width':'60px','height':'60px','outline':'none','box-shadow':'none','border-color': borderEnd(x,y),'border-width':'thin','font-size':'30px'}" class="ps-4 h6" :id="x*10+y" v-model="board_render[x][y].value" :disabled="board_render[x][y].d"  @change="checkInput(x,y),checkSoln()" :class="{ 'text-dark':board_render[x][y].d,'text-primary':!board_render[x][y].d && checkNumber(x,y),'text-danger':!checkNumber(x,y)}" >
                 </div>
             </div>
             
@@ -70,10 +70,13 @@
         methods:{
     
             coord(x,y){
-                return String(x)+" "+String(y)
+                return String(x)+" "+String(y)//:title="coord(x,y)"
+            },
+            checkNumber(x,y){// check if number is correct
+                return this.board_render[x][y].value == this.copy[x][y].value
             },
             borderEnd(x,y){
-                color='red'
+                color='black'
                 arr=['Ivory','Ivory','Ivory','Ivory ']
                 if(x==0){
                     
