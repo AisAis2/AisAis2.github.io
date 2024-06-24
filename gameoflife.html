@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <title>Document</title>
+    <style>
+                    /* The Modal (background) */
+            .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            }
+
+            /* Modal Content/Box */
+            .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto; /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 40%; /* Could be more or less, depending on screen size */
+            }
+
+            /* The Close Button */
+            .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            margin-left: 95%;
+            }
+
+            .close:hover,
+            .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+            }
+    </style>
+</head>
+<body>
+    <div id="app" class="font-monospace">
+
+  <!-- Modal -->
+  <div id="instructions" class="modal">
+    <!-- Modal content -->
+    <div class="modal-content">
+      <span class="close" @click="closeModal()">&times;</span>
+      <p>Instructions:
+        *Conway's game of life:
+        <br>
+        *Zero-user game, where "cells" obey certain <a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">rules(Wikipedia)</a>
+        <br>
+        *By clicking on a cell you can make it 'alive' which turns it dark. White cells are dead cells.
+        <br>
+        *You can observe Population Dynamics on the right graph.
+        <br>
+        *You can press "RandomLife" in order to populate the grid in random order.
+        <br>
+        *Press 'Start' to start simulation
+    </p>
+    </div>
+  
+  </div>
+  <!--Modal-->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="d-flex text-white" :style="{'height':'20px'}">Conway's Game Of Life</div>
+            <div class="d-flex text-white" :style="{'height':'20px','margin-left':'30px'}">Population: {{currentPopulation}}</div>
+            <div class="d-flex text-white" :style="{'height':'20px','margin-left':'30px'}">Generation: {{generation}}</div>
+            <div class="d-flex text-warning" :style="{'height':'20px','margin-left':'30px','cursor':'pointer'}" @click = 'displayModal()'>Instructions</div> 
+        </nav>
+        <div class="d-flex" :style="{'width':'100%','height':'80%'}">
+            <div v-for="i in grid[0].length" v-if="grid.length>2">
+                <div v-for="j in grid.length" :style="{'min-width':'12px','min-height':'12px'} " class="border border-dark border-1" :class="{'bg-dark':grid[j-1][i-1].alive}" @click = "aliveOrDead(j-1,i-1)">
+                </div>
+            </div>
+            <div class="d-flex flex-column" :style="{'width':'35%'}">
+                <canvas id="graph"></canvas>
+                <div class="btn btn-outline-dark btn-sm mx-5" :style="{'width':'25%'}" @click="clearGraph(chart)">Clear</div>
+            </div>
+        </div>
+
+        <div class="btn btn-outline-dark mt-3" @click="gameOfLifeLoop()" >Start</div>
+        <div class="btn btn-outline-dark mt-3 mx-2" @click="randomLife(grid)">RandomLife</div>
+        <div class="btn btn-outline-dark mt-3 mx-2" @click = 'stop_bool=true'>Stop</div>
+        <div class="btn btn-outline-dark mt-3 mx-2" @click ='clearGrid(grid)'>ClearBoard</div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+        let app = Vue.createApp({
+
+            data: function(){
+                this.chart = null;
+                return{
+                    grid:[],
+                    gridCopy:[],
+                    currentPopulation:0,
+                    stop_bool:false,
+                    labels:[0],
+                    datas:[0],
+                    generation:0,
+                    height:50,
+                    width:70,
+                }
+            },
+            computed:{
+
+            },
+            methods:{
+                populateGrid(grid){
+                    for(let i = 0; i<this.height;i++){
+                        let col = [];
+                            for(let x = 0;x<this.width;x++){
+                                col.push({neighbs:[],'alive':false,'y':i,'x':x})
+                            }
+                        grid.push(col);
+
+                    }
+                },
+                clearGraph(chart){
+                    chart.data.labels=[];
+                    chart.data.datasets[0].data=[];
+                    chart.update();
+
+                },
+                populateNeighborsGrid(grid){//assign neigbors for each cell in the grid
+                    for(let i = 0;i<grid.length;i++){
+                        for(let j = 0; j<grid[1].length;j++){
+                            if(j>0){
+                                grid[i][j].neighbs.push(grid[i][j-1])
+                            }
+                            if(i>0){
+                                grid[i][j].neighbs.push(grid[i-1][j])
+                            }
+                            if(j<grid[0].length-1){
+                                grid[i][j].neighbs.push(grid[i][j+1])
+                            }
+                            if(i<grid.length-1){
+                                grid[i][j].neighbs.push(grid[i+1][j])
+                            }
+                            //
+                            if(i>0 && j>0){
+                                grid[i][j].neighbs.push(grid[i-1][j-1])
+                            }
+                            if(i>0 && j<grid[1].length-1){
+                                grid[i][j].neighbs.push(grid[i-1][j+1])
+                            }
+                            if(i<grid.length-1 && j<grid[1].length-1){
+                                grid[i][j].neighbs.push(grid[i+1][j+1])
+                            }
+                            if(i<grid.length-1 && j>0){
+                                grid[i][j].neighbs.push(grid[i+1][j-1])
+                            }
+                        }
+                    }
+                },
+
+                checkNeighbors(cell){//one element in the grid is called cell;
+                    for(let e=0;e<cell.neighbs.length;e++){
+                        cell.neighbs[e].alive= true;
+                    }
+                },
+                gameOfLife(i,j){//run rules on the current cell
+                    let cell = this.grid[i][j];
+                    let cell2 = this.gridCopy[i][j];
+                    cell2.alive = JSON.parse(JSON.stringify(cell.alive))                    
+                    let aliveNeigbs = 0;
+                    for(let n = 0; n<cell.neighbs.length;n++){
+                        if(cell.neighbs[n].alive){
+                            aliveNeigbs+=1;
+                        }
+                    }
+                    if(aliveNeigbs<2 && cell.alive){
+                        cell2.alive = false
+                    }
+                    if(aliveNeigbs>=2 && aliveNeigbs<4){
+                    }
+                    if(aliveNeigbs>3 && cell.alive){
+                        cell2.alive =false
+                    }
+                    if(aliveNeigbs==3 && cell.alive!=true){
+                        cell2.alive=true
+                        }
+                    },
+                startGameOfLife(grid){//one step of the game.
+                    let temp_population = 0;
+                    for(let i = 0; i<grid.length;i++){
+                        for(let j = 0; j<grid[0].length;j++){
+                            if(grid[i][j].alive){
+                                temp_population+=1;
+                            };
+                            this.gameOfLife(i,j);
+                        }
+                    }
+                    this.currentPopulation = temp_population;//update population after each step of the game
+                    this.deepCopyArray();//copy gridCopy in grid
+                },
+                aliveOrDead(i,j){
+                    this.grid[i][j].alive=!this.grid[i][j].alive
+                    this.gridCopy[i][j].alive=!this.gridCopy[i][j].alive
+                },
+                clearGrid(grid){
+                    for(let i = 0;i<grid.length;i++){
+                        for(let j =0;j<grid[1].length;j++){
+                            grid[i][j].alive=false
+                        }
+                    }
+                },
+                deepCopyArray(){
+                    for(let i=0;i<this.grid.length;i++){
+                        for(let j=0;j<this.grid[1].length;j++){
+                            this.grid[i][j].alive = this.gridCopy[i][j].alive && true
+                        }
+                    }
+                    this.clearGrid(this.gridCopy)
+                },
+                async gameOfLifeLoop(){
+                    let cnt = 0
+                    while(true){
+                        this.startGameOfLife(this.grid);
+                        this.generation+=1;
+                        if(this.generation%10==0){
+                            this.chart.data.labels.push(this.generation);
+                            this.chart.data.datasets[0].data.push(this.currentPopulation);
+                            this.chart.update();
+                        };
+                        cnt+=1;
+                        if(cnt%1==0){
+                                await new Promise((resolve)=> setTimeout(resolve,5));
+                            };
+                        if(this.stop_bool){
+                            this.stop_bool=false;
+                            return;
+                        };
+                    }
+                },
+                randomLife(grid){
+                    let temp_population=0
+                    for(let i = 0;i<grid.length;i++){
+                        for(let j =0;j<grid[1].length;j++){
+                            grid[i][j].alive=Math.random()<0.3;
+                            if(grid[i][j].alive){
+                                temp_population+=1;
+                            };
+                        }
+                    }
+                    this.currentPopulation = temp_population;
+                },
+                createGraph(){
+                    const ctx = document.getElementById('graph');
+                    this.chart  = 
+                        new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                labels: [0],
+                                datasets: [{
+                                    label: 'Population Dynamics',
+                                    data: [0],
+                                    borderWidth: 1,
+                                    tension : 0.3,
+                                    borderColor: 'rgb(75, 192, 192)',
+                                }],
+
+                                },
+                                options: {
+                                    scales: {
+                                        min:50,
+                                        x: {
+
+                                            beginAtZero:true,
+                                            title: {
+                                                color:'green',
+                                                display:true,
+                                                text:'Generation',
+                                            }
+                                        },
+                                        y: {
+                                            beginAtZero:true,
+                                            title: {
+                                                color:'green',
+                                                display:true,
+                                                text:'Population',
+
+                                            }
+                                        }
+                                    },
+                                }
+                            });
+                },
+                
+                displayModal(){
+                    let modal = document.getElementById('instructions');
+                    modal.style.display='block';
+                },
+            closeModal(){
+                document.getElementById('instructions').style.display='none';
+            }},
+
+                mounted(){
+                this.populateGrid(this.grid),
+                this.populateNeighborsGrid(this.grid),
+                this.populateGrid(this.gridCopy),
+                this.populateNeighborsGrid(this.gridCopy),
+                this.createGraph()
+            },
+            },
+        )
+        app.mount('#app')
+    </script>
+</body>
+</html>
