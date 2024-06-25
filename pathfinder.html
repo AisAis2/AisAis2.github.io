@@ -10,7 +10,7 @@
 </head>
 <body>
 
-    <div id="app">
+    <div id="app" class="font-monospace">
         <nav class="navbar navbar-expand-lg bg-dark">
             <div class="containter-fluid">
                 <a class="navbar-brand text-white ms-3" href="#">Pathfinder</a>
@@ -75,7 +75,7 @@
 
         <div class="container-fluid">
             <div v-for = "x in grid.length" class="d-flex flex-fill">
-                <div v-for="i in grid[x-1]?.length"  :title="titleRetur(x-1,i-1)" :style="{'width':'25px', 'height': '25px','background-color':colorWeight(grid[x-1][i-1].weight)}" @click ="chooseNodes(x-1,i-1)" :class = "classColor(x,i)" class="border border-dark" v-if="startNode(x-1,i-1)">
+                <div v-for="i in grid[x-1]?.length"  :title="titleRetur(x-1,i-1)" :style="{'width':'20px', 'height': '20px','background-color':colorWeight(grid[x-1][i-1].weight)}" @click ="chooseNodes(x-1,i-1)" :class = "classColor(x,i)" class="border border-dark" v-if="startNode(x-1,i-1)">
                         
                 </div>
                 <!-- <div v-for="i in grid[x-1]?.length"  :style="{'width':'25px', 'height': '25px', 'border-style':''}" @click ="chooseNodes(x-1,i-1)"  class="border border-dark" v-else>
