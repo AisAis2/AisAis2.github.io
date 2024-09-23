@@ -10,7 +10,7 @@
 </head>
 <body>
 
-    <div id="app" class="font-monospace">
+    <div id="app" class="font-monospace " >
         <nav class="navbar navbar-expand-lg bg-dark">
             <div class="containter-fluid">
                 <a class="navbar-brand text-white ms-3" href="#">Pathfinder</a>
@@ -18,14 +18,13 @@
                 <a class="navbar-brand text-white" href="#" @click='Dijkistras()'>Dijkstra</a>
             </div>
         </nav>
-        <div class="container-fluid d-flex flex-row" style="height: 40px;">
-            <button @click="chooseNode=!chooseNode" class="btn btn-light">Start Node</button>
-            <button @click="chooseNodeEnd=!chooseNodeEnd" class="mx-1 btn btn-light">End Node</button>
-            <button @click="clearBoard()" class="mx-1 btn btn-light">Clear</button>
-            <button @click="generateMountain()" class="mx-1 btn btn-light">Generate elevation</button>
+        <div class="container-fluid d-flex flex-row my-2" style="height: 40px;">
+            <button @click="chooseNode=!chooseNode" class="btn btn-light btn-outline-dark mx-1 overlay-message "><span style="font-weight: bold; font: 20px Monospace;margin-right: 5px;color: blue;opacity: 1;">></span>Start</button>
+            <button @click="chooseNodeEnd=!chooseNodeEnd" class="mx-1 btn btn-light btn-outline-dark"><span style="font-weight: bold; font: 20px Monospace;margin-right: 5px;color: blue;">x</span>Target</button>
+            <button @click="clearBoard()" class="mx-1 btn btn-light btn-outline-dark">Clear</button>
 
             <div class="dropdown">
-                <button class="btn btn-light dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">Generate obstacles</button>
+                <button class="btn btn-light dropdown-toggle btn-outline-dark mx-1 " id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">Walls</button>
                 <ul class="dropdown-menu" aria-labelledby="#dropdownMenuButton1">
                     <li>
                         <input type="range" min="1" max="100" @change="generateWalls()" v-model="sliderVal">
@@ -34,10 +33,8 @@
                 </ul>
             </div>
 
-            <div :style="{'width':'25px', 'height': '25px'}" class="bg-danger mt-2"></div><span class="mt-2 ms-2">Start/End Nodes</span>
-            <div :style="{'width':'25px', 'height': '25px'}" class="bg-warning mt-2 ms-3"></div><span class="mt-2 ms-2">Shortest Path</span>
-            <div :style="{'width':'25px', 'height': '25px'}" class="bg-success mt-2 ms-3"></div><span class="mt-2 ms-2">Visited</span>
-            <button type="button" class="btn btn-light ms-3" data-bs-toggle="modal" data-bs-target="#exampleModal">
+
+            <button type="button" class="btn btn-light btn-outline-dark mx-1 " data-bs-toggle="modal" data-bs-target="#exampleModal">
                 Instructions
             </button>
             
@@ -49,14 +46,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                    1) Choose start by pressing start node button and then pressing on one of the squares on the board. Then choose end node same way. <br>
-                    2) Then you can generate obstacles or elevations by pressing on respective buttons. Higher the elevation darker the square and algorithms will try to avoid them.<br>
-                    3) After choosing start/end nodes you can press on A* or Dijkistra buttons to choose to run whatever algorithm you want.<br>
-                    4) You can clear the board by using clear button<br>
+                    1) Choose Start Node and place it on the board, then do perform same actions with End Node <br>
+                    2) You can choose either Dijkstra or A* to vizualize a pathfinding algorithm.<br>
                     </div>
                     <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
+                        </div>
                 </div>
                 </div>
             </div>
@@ -72,17 +67,21 @@
 
 
 
-        <div class="container-fluid">
+        <div class="container-fluid" v-cloak>
             <div v-for = "x in grid.length" class="d-flex flex-fill">
-                <div v-for="i in grid[x-1]?.length"  :title="titleRetur(x-1,i-1)" :style="{'width':'20px', 'height': '20px','background-color':colorWeight(grid[x-1][i-1].weight)}" @click ="chooseNodes(x-1,i-1)" :class = "classColor(x,i)" class="border border-dark" v-if="startNode(x-1,i-1)">
+                <div v-for="i in grid[x-1]?.length" :title="titleRetur(x-1,i-1)"  :style="{'width':'25px', 'height': '25px','border':'1px solid','background-color':colorWeight(grid[x-1][i-1].weight),'text-align':'center',}" @click ="chooseNodes(x-1,i-1)" :class = "classColor(x,i)" v-if="startNode(x-1,i-1)"
+                >
+                <span style="color:blue">{{grid[x-1][i-1].text}}</span>
                         
                 </div>
-                <!-- <div v-for="i in grid[x-1]?.length"  :style="{'width':'25px', 'height': '25px', 'border-style':''}" @click ="chooseNodes(x-1,i-1)"  class="border border-dark" v-else>
-                </div> -->
+
 
         </div>
 
         
+    </div>
+    <div id="snackbar" :style="{opacity:opac,'background-color':'white','border':'1px solid'}" v-if="message">
+        {{ message }}
     </div>
     </div>
 
@@ -102,11 +101,13 @@
                     closedSet:[],
                     cell :{neighbors:[],'isVisited':false},
                     ccl:'bg-primary',
-                    start:'',
-                    end:'',
+                    start:'',//start node
+                    end:'',//end node
                     chooseNode:false,
                     chooseNodeEnd:false,
                     sliderVal:30,
+                    opac:1,
+                    message:'',
 
                 }
             },
@@ -114,18 +115,25 @@
 
             },
             methods: {
-                generateWalls(){
-                    this.clearBoard()
+                clearWalls(){
                     for(let x=0;x<this.grid.length;x++){
                         for(let y=0;y<this.grid[0].length;y++){
-                            if(Math.random()<this.sliderVal/100){
+                                this.grid[x][y].wall=false; 
+                    }
+                }
+                },
+                generateWalls(){
+                    this.clearWalls();
+                    for(let x=0;x<this.grid.length;x++){
+                        for(let y=0;y<this.grid[0].length;y++){
+                            if(Math.random()<this.sliderVal/100 && this.grid[x][y]!==this.start && this.grid[x][y]!==this.end ){
                                 this.grid[x][y].wall=true 
                             }
                         }
                     }
                 },
                 titleRetur(x,y){
-                    return 'weight:'+String(this.grid[x][y].weight)
+                    return this.grid[x][y].title
                 },
                 colorWeight(w){
                     if(w<300){
@@ -147,6 +155,8 @@
                                 this.grid[x][y].path=false
                                 this.grid[x][y].weight=1
                                 this.grid[x][y].dist=1000000
+                                this.grid[x][y].title='';
+                                this.grid[x][y].text=''
                         }
                     }
                     this.openSet=[]
@@ -156,17 +166,22 @@
                 },
                 
                 gridCreate(){
-                    for(let i = 0; i<30 ; i++){
+                    for(let i = 0; i<25 ; i++){
                         let col = [];
-                        for(let x = 0; x<100; x++){
+                        for(let x = 0; x<70; x++){
                             Math.random()*100
-                            col.push({neighbors:[],'isVisited':false,'fff':0,'g':0,'h':0,'x':x,'y':i,'previous':'','wall':false,'current':false,'path':false,'weight':1,'dist':1000000 });
+                            col.push({neighbors:[],'isVisited':false,'fff':0,'g':0,'h':0,'x':x,'y':i,'previous':'','wall':false,'current':false,'path':false,'weight':1,'dist':1000000,'text':'','title':''});
                         }
                         this.grid.push(col);
                     }
-                    this.grid[0][0].wall = false;
-                    this.grid[29][99].wall = false;
+                    // this.grid[0][0].wall = false;
+                    // this.grid[29][99].wall = false;
                     return this.grid
+                },
+                async modalMethod(){//Modal in case of No Solution
+                    this.message="No Solution"
+                    await new Promise((resolve)=> setTimeout(resolve,2000));
+                    this.fadeOut()
                 },
                 generateMountain(){
                     for(let x=0;x<this.grid.length;x++){
@@ -181,29 +196,35 @@
                     }
                 },
                 classColor(x,i){
-
-                    if(this.grid[x-1][i-1].isVisited){
+                    if(this.grid[x-1][i-1]==this.start || this.grid[x-1][i-1]==this.end){
+                        return;
+                    }
+                    if(this.grid[x-1][i-1].isVisited && (this.grid[x-1][i-1]!==this.start && this.grid[x-1][i-1]!==this.end) ){
+                        this.grid[x-1][i-1].title = ''
                         return 'bg-danger';
                     }
                     
                     if(this.grid[x-1][i-1].path){
+                        this.grid[x-1][i-1].title = 'SHORTEST_PATH'
                         return 'bg-warning';
                     }
                     if(this.grid[x-1][i-1].wall){
+                        this.grid[x-1][i-1].title = 'WALL'
                         return 'bg-dark';
                     }
 
                     if(this.openSet.indexOf(this.grid[x-1][i-1])>-1 || false){
+                        this.grid[x-1][i-1].title = 'NEXT_TO_VISIT'
                         return 'bg-primary';
                     } 
                     else if(this.closedSet.indexOf(this.grid[x-1][i-1])>-1){
+                        this.grid[x-1][i-1].title = 'VISITED'
                         return 'bg-success';
                     } 
                     else {
                         return '';
                     }
 
-                    //return !(this.openSet.indexOf(this.grid[x-1][i-1])>-1 || this.closedSet.indexOf(this.grid[x-1][i-1])>-1)?'':(this.closedSet.indexOf(this.grid[x-1][i-1])>-1?'bg-primary':'bg-success');//slowww
                 },
                 gridNeighbors(grid){
                     for(let i = 0; i<grid.length; i++){
@@ -252,7 +273,16 @@
                         ele.isVisited=!ele.isVisited;
                     }
                 },
-
+                fadeOut(){
+                    let v = setInterval(()=>{
+                    this.opac-=0.05
+                    if(this.opac<=0){
+                    clearInterval(v)
+                    this.message=''
+                    this.opac = 1;
+                    }
+                },40)
+                },
                 tracePath(end){
                     while(end.previous){
                         end = end.previous;
@@ -263,14 +293,19 @@
                     if(this.chooseNode){
                         this.start=this.grid[x][y]
                         this.start.wall=false
+                        this.start.text = '>'
                         this.start.isVisited=true
+                        this.start.title='START'
                         this.chooseNode=false
                         this.chooseNodeEnd=false
+
                     }
                     else if(this.chooseNodeEnd){
                         this.end=this.grid[x][y]
                         this.end.wall=false
+                        this.end.text= 'X'
                         this.end.isVisited=true
+                        this.end.title = "END"
                         this.chooseNodeEnd=false
                         this.chooseNode=false
                     }
@@ -418,15 +453,15 @@
                     this.closedSet.push(min_node)
                     c+=1
 
-                    if(c==30){
+                    if(c==100){
                         await new Promise((resolve)=> setTimeout(resolve,1));
                         c=0
                     }
                 }
-                console.log('No Solution')
+                this.modalMethod();
             },
         },
-
+        
 
             mounted(){
                 
@@ -436,18 +471,63 @@
             }
         },
     )
-        app.component('box',{
-            props:['aa'],
-            template:`
-            <button class="d-flex border bg-primary" style="width:30px; height: 30px;">{{aa}}</button>
-            `
-        })
         app.mount('#app')
     </script>
 </body>
 
 <style>
+[v-cloak]{
+    display: none;
+}
+#snackbar{
+  min-width: 350px; /* Set a default minimum width */
+  min-height:100px;
+  border-radius:10px;
+  margin-left: -250px; /* Divide value of min-width by 2 */
+  color: #000; /* White text color */
+  text-align: left; /* Centered text */
+  padding: 16px; /* Padding */
+  position: fixed; /* Sit on top of the screen */
+  z-index: 1; /* Add a z-index if needed */
+  left: 92%; /* Center the snackbar */
+  bottom: 30px; /* 30px from the bottom */
+}
+#snackbar.show {
+  visibility: visible; /* Show the snackbar */
+  /* Add animation: Take 0.5 seconds to fade in and out the snackbar.
+  However, delay the fade out process for 2.5 seconds */
+  -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
 
+/* Animations to fade the snackbar in and out */
+@-webkit-keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+.overlay {
+    background:#000;
+    z-index: 20000;
+}
+.overlay-message{
+    background-color:#fff !important;
+    z-index: 300000;
+}
 </style>
 
 </html> 
